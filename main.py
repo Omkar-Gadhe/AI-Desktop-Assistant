@@ -1,68 +1,133 @@
-import subprocess
-import os
+# chatbot.py
+import time
+import ai_gateway
+import action
 
-print("Welcome Ghost")
+from history import ShortTermMemory  # 1. Import your new memory module
 
-act_words = ("launch", "open", "run")
-apps = {
-    "firefox": "firefox",
-    "vs code": "code"
-}
-responses = {
-        "hi": "Nihao,",
-        "how are you": "I'm fine\nHow about you?",
-        "who are you": "Your Assistant\nHow can I help you?"
-    }
-exit_commands = ("bye","exit","close","goodbye")
-def chat_brain(user_input):
+# 2. Instantiate memory once at startup so it stays alive across prompts
+# Initialize memory once at application startup
+chat_memory = ShortTermMemory(max_turns=3)
 
-    if user_input in responses:
-        print(responses[user_input])
+# Global Control Settings
+ACT_WORDS = ("launch", "open", "run", "start")
+EXIT_COMMANDS = ("bye", "exit", "close", "goodbye")
 
-    elif "good morning" in user_input:
-        print("Good Morning Ghost!")
 
-    elif "beautiful" in user_input:
-        print("Thanks for compliment Ghost!")
-
+def parse_user_input(user_input: str):
+    """JOB 1: String Parsing. 
+    Inspects the prompt, identifies special flags, and returns clean data.
+    """
+    is_hard_task = False
+    clean_prompt = user_input
     
+    if user_input.lower().startswith("/think"):
+        is_hard_task = True
+        clean_prompt = user_input[6:].strip()
+        
+    return clean_prompt, is_hard_task
+
+
+def stream_and_print_response(context_history, is_hard_task: bool) -> str:
+    """JOB 2: Stream Consumption.
+    Loops through network chunks, prints them in real time, and harvests them into a string.
+    """
+    print("AI: ", end="", flush=True)
+    full_ai_response = ""
     
-    else:
-        print("I don't understand\nCan you say it again please!")
-
-
-def action(user_input):
-    parts = user_input.split(maxsplit=1)
-    if len(parts) != 2:
-        print("Unknown command please try again:")
-        return
-
-    verb, app_name = parts
-    if verb not in act_words:
-        print("Unknown command please try again:")
-        return
-
-    try:
-        subprocess.Popen([apps[app_name]])
-        print("Opening " + app_name.title() + "...")
-    except KeyError:
-        print("Unknown app, please try again:")
-    except FileNotFoundError:
-        print("App is not installed or cannot be started.")
-
-
+    # Call the network gateway pipeline
+    chunks = ai_gateway.generate_response_stream(context_history, use_thinking_model=is_hard_task)
     
-while True:
-    user_input = input("You: ").strip().lower()
+    for chunk in chunks:
+        print(chunk, end="", flush=True)
+        full_ai_response += chunk
+        
+    print()  # Print a clean newline when the stream completes successfully
+    return full_ai_response
+
+
+def execute_network_with_retry(context_history, is_hard_task: bool) -> str:
+    """JOB 3: Reliability & Resilience.
+    Orchestrates network retries and exponential backoff timing if Google drops the ball.
+    """
+    max_retries = 3
+    retry_delay = 2 
+    
+    for attempt in range(max_retries):
+        try:
+            # Delegate the actual streaming work to our stream worker
+            return stream_and_print_response(context_history, is_hard_task)
+            
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"\n\n[System Error: Google's servers are completely overloaded. Try again soon.]\n")
+                raise e  # Bubble the exception up if we are completely out of retries
+            else:
+                print(f"\n[Server busy... retrying in {retry_delay}s (Attempt {attempt + 1}/{max_retries})...]")
+                time.sleep(retry_delay)
+                retry_delay *= 2
+    return ""
+
+
+def chat_brain(user_input: str):
+    """JOB 4: High-Level Orchestrator.
+    Does no core computational work itself. It simply dictates the operational workflow line-by-line.
+    """
     if not user_input:
-        print("Please type something.")
-        continue
-
-    if any(user_input.startswith(word + " ") for word in act_words):
-        action(user_input)
+        return
+        
+    # 1. Parse incoming strings cleanly
+    clean_prompt, is_hard_task = parse_user_input(user_input)
     
-    elif user_input in exit_commands:
-        print("Good Bye Ghost!")
-        break
-    else:
-        chat_brain(user_input)
+    # 2. Record the question to memory
+    chat_memory.add_message(role="user", text=clean_prompt)
+    
+    # 3. Fire the network pipeline safely and fetch the generated text
+    try:
+        current_context = chat_memory.get_context()
+        final_response = execute_network_with_retry(current_context, is_hard_task)
+        
+        # 4. If the call was successful, record the answer to memory
+        if final_response:
+            chat_memory.add_message(role="model", text=final_response)
+            
+    except Exception:
+        # Prevent the whole loop from crashing if the retry engine ultimately failed
+        pass
+
+
+def detect_intent(text):
+    text = text.lower()
+    # Cleaner lookup using your global control variables!
+    if any(word in text for word in ACT_WORDS):
+        return "launch_app"
+    if any(word in text for word in EXIT_COMMANDS):
+        return "exit"
+    return "chat"
+
+
+if __name__ == "__main__":
+    # Print the setup menu ONCE at the absolute start of the program
+    print("==================================================")
+    print("Chatbot initialized! (Streaming + Smart Routing Active)")
+    print("-> Type normally for the FAST model.")
+    print("-> Type '/think' first for the DEEP THINKING model.")
+    print("==================================================")
+
+    while True:
+        # FIXED: Removed .lower() from here so the AI gets clean data
+        user_input = input("\nYou: ").strip()
+        
+        if not user_input:
+            print("Please type something.")
+            continue
+    
+        intent = detect_intent(user_input)
+    
+        if intent == "launch_app":
+            action.act_brain(user_input)
+        elif intent == "exit":
+            print("Good Bye Ghost!")
+            break
+        else:
+            chat_brain(user_input)
