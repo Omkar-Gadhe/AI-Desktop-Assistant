@@ -1,6 +1,5 @@
-#mini ghost assinstant v3
-
 import subprocess
+import os
 
 print("Welcome Ghost")
 
@@ -32,7 +31,7 @@ def chat_brain(user_input):
         print("I don't understand\nCan you say it again please!")
 
 
-def act_brain(user_input):
+def action(user_input):
     parts = user_input.split(maxsplit=1)
     if len(parts) != 2:
         print("Unknown command please try again:")
@@ -60,7 +59,7 @@ while True:
         continue
 
     if any(user_input.startswith(word + " ") for word in act_words):
-        act_brain(user_input)
+        action(user_input)
     
     elif user_input in exit_commands:
         print("Good Bye Ghost!")
