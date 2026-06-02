@@ -1,22 +1,28 @@
-print("Welcome Ghost,")
-ghost_l = ["hi","who are you","bye","how are you"]
+print("Welcome Ghost")
+
+assistant_name = "AIRA"
+
+responses = {
+    "hi": f"Nihao, I am {assistant_name}",
+    "how are you": "I'm fine\nHow about you?",
+    "who are you": "Your Assistant\nHow can I help you?"
+}
 
 while True:
-    ghost = input().strip().lower()
-    if ghost in ghost_l or "beautiful" in ghost or "good morning" in ghost:
-      if ghost == "hi":
-          print("Nihao,I am AIRA")
-      elif "good morning" in ghost:
-          print("Good Morning Ghost!")
-      elif ghost == "how are you":
-          print("I'm fine\nHow about you:")
-      elif "beautiful" in ghost:
-          print("Thanks for compliment Ghost!")
-      elif ghost == "who are you":
-          print("Your Assistant\nHow can i help you:")
+    user_input = input("You: ").strip().lower()
+
+    if user_input in responses:
+        print(responses[user_input])
+
+    elif "good morning" in user_input:
+        print("Good Morning Ghost!")
+
+    elif "beautiful" in user_input:
+        print("Thanks for compliment Ghost!")
+
+    elif user_input == "bye":
+        print("Good Bye Ghost!")
+        break
     
-      elif ghost == "bye":
-          print("Good Bye Ghost!")
-          exit()
     else:
-        print("I don't understand\ncan you say it again please!")
+        print("I don't understand\nCan you say it again please!")
