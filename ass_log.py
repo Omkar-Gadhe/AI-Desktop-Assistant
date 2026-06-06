@@ -1,4 +1,4 @@
-# logging_function.py
+# ass_log.py
 import logging
 
 # 1. Create a dedicated, named logger for your application

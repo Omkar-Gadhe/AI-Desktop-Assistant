@@ -1,6 +1,6 @@
  # action.py
 import subprocess
-from logging_function import logger
+from ass_log import logger
 
 # The absolute source of truth for binaries
 APPS = {
@@ -11,6 +11,7 @@ APPS = {
     "terminal": "gnome-terminal",
     "calculator": "gnome-calculator",
     "vscode": "code",
+    "vs code": "code",
     "code": "code"
 }
 

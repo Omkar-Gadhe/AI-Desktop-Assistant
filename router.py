@@ -1,5 +1,5 @@
 # router_logic.py
-import action as action_engine
+
 from services.nlp_service import nlp_service
 
 act_words = ("launch", "open", "run", "start")
@@ -20,12 +20,14 @@ def router(user_input: str):
     # 3. Process the sentence linguistically (ONCE)
     doc = nlp(user_input)
     
-    # 4. Extract the command verb only if its grammatical role is an actual VERB
+    # 4. Extract the command verb with an imperative fallback rule
     action_verb = None
     for token in doc:
-        if token.text.lower() in act_words and token.pos_ == "VERB":
-            action_verb = token.text.lower()
-            break  
+        if token.text.lower() in act_words:
+            # FIX: Trust it if spaCy knows it's a VERB, OR if it's the very first token (index 0)
+            if token.pos_ == "VERB" or token.i == 0:
+                action_verb = token.text.lower()
+                break  
 
     # 5. Extract unique matching apps based on strict token boundaries
     matches = matcher(doc)

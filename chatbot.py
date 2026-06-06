@@ -1,17 +1,17 @@
-# chatbot.py
 #...File name initialized
+# chatbot.py
 
+#...Imported all necessary modules
 import time
 import ai_gateway
 import action as action_engine
 from history import ShortTermMemory  
-from logging_function import logger
-import router_logic as rl
+from ass_log import logger
+import router as rl
 from services.nlp_service import nlp_service
-#...Imported all necessary modules
 
+#...Instantiate memory once at startup so it stays alive across prompts
 chat_memory = ShortTermMemory(max_turns=5)
-# 2. Instantiate memory once at startup so it stays alive across prompts
 
 def parse_user_input(user_input: str):
     """JOB 1: String Parsing. 
@@ -25,7 +25,6 @@ def parse_user_input(user_input: str):
         clean_prompt = user_input[6:].strip()
         
     return clean_prompt, is_hard_task
-
 
 def stream_and_print_response(context_history, is_hard_task: bool) -> str:
     """JOB 2: Stream Consumption.
@@ -72,7 +71,6 @@ def execute_network_with_retry(context_history, is_hard_task: bool) -> str:
                 retry_delay *= 2
     return ""
 
-
 def chat_brain(user_input: str):
     """JOB 4: High-Level Orchestrator.
     Does no core computational work itself. It simply dictates the operational workflow line-by-line.
@@ -106,7 +104,6 @@ def chat_brain(user_input: str):
         
         # Give the user a clear, professional warning without spilling raw Python errors on screen
         print("\n[Notice: A temporary internal engine error occurred. The system safely recovered.]")
-
 
 if __name__ == "__main__":
     print("==================================================")
