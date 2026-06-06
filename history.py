@@ -2,7 +2,7 @@
 from google.genai import types
 
 class ShortTermMemory:
-    def __init__(self, max_turns=3):
+    def __init__(self, max_turns=5):
         # 1 turn = 1 user prompt + 1 model response (2 messages total)
         self.max_messages = max_turns * 2
         self.history = []
